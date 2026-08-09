@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuietPath - Urban Soundscape Map</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        .legend {
+            background: white; padding: 14px; line-height: 22px; color: #333;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15); border-radius: 8px; 
+            position: absolute; bottom: 30px; right: 30px; z-index: 1000;
+        }
+        .legend i { width: 16px; height: 16px; float: left; margin-right: 8px; opacity: 0.85; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <div class="legend" id="legend"><b>Acoustic Level (dB)</b><br></div>
+
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        
+        var map = L.map('map').setView([12.9716, 77.5946], 16);
+
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }).addTo(map);
+
+        
+        function getSoundColor(db) {
+            return db > 70 ? '#e41a1c' :  
+                   db > 60 ? '#ff7f00' :  
+                   db > 50 ? '#377eb8' :  
+                                '#4daf4a';   
+        }
+
+        
+        $.getJSON("quiet_paths.geojson", function(data) {
+            L.geoJson(data, {
+                style: function(feature) {
+                    return {
+                        color: getSoundColor(feature.properties.noise_db),
+                        weight: 4.5,
+                        opacity: 0.85
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    layer.bindPopup("<b>Estimated Ambient Noise:</b> " + Math.round(feature.properties.noise_db) + " dB");
+                }
+            }).addTo(map);
+        });
+
+        
+        var legend = document.getElementById('legend');
+        var thresholds = [45, 55, 65, 75];
+        var labels = ['Serene (<50 dB)', 'Quiet (50-60 dB)', 'Moderate (60-70 dB)', 'Loud (>70 dB)'];
+        for (var i = 0; i < thresholds.length; i++) {
+            legend.innerHTML += '<i style="background:' + getSoundColor(thresholds[i]) + '"></i> ' + labels[i] + '<br>';
+        }
+    </script>
+</body>
+</html>
